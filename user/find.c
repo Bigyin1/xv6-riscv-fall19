@@ -41,7 +41,6 @@ void walk(char *re, char *path) {
 
     case T_DIR:
       if (strlen(path) + 1 + DIRSIZ + 1 > sizeof path_buf) {
-        printf("%s\n", "46");
         break;
       }
       strcpy(path_buf, path);
