@@ -24,19 +24,20 @@ void read_argv(int s_idx, char* argv[MAXARG], char* buf) {
         exit();
       }
       while (*buf && strchr(whitespace, *buf)) buf++;
-      argv[s_idx] = arg;
+      argv[s_idx++] = arg;
       arg = buf;
-      s_idx++;
       continue;
     }
     ++buf;
   }
-  if (s_idx >= MAXARG) {
-    printf("xargs: too many args\n");
-    exit();
+  if (*buf) {
+    if (s_idx >= MAXARG) {
+      printf("xargs: too many args\n");
+      exit();
+    }
+    argv[s_idx++] = arg;
   }
-  argv[s_idx] = arg;
-  argv[s_idx + 1] = 0;
+  argv[s_idx] = 0;
 }
 
 int main(int argc, char* argv[]) {
