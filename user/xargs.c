@@ -20,7 +20,7 @@ void read_argv(int s_idx, char* argv[MAXARG], char* buf) {
     if (strchr(whitespace, *buf)) {
       *buf++ = 0;
       if (s_idx >= MAXARG) {
-        printf("xargs: too many args");
+        printf("xargs: too many args\n");
         exit();
       }
       while (*buf && strchr(whitespace, *buf)) buf++;
@@ -32,7 +32,7 @@ void read_argv(int s_idx, char* argv[MAXARG], char* buf) {
     ++buf;
   }
   if (s_idx >= MAXARG) {
-    printf("xargs: too many args");
+    printf("xargs: too many args\n");
     exit();
   }
   argv[s_idx] = arg;
@@ -40,11 +40,11 @@ void read_argv(int s_idx, char* argv[MAXARG], char* buf) {
 }
 
 int main(int argc, char* argv[]) {
-  char* xargv[MAXARG];
+  char* xargv[MAXARG + 1];
   char buf[100];
 
   if (argc < 2) {
-    printf("xargs: need at least one orgs");
+    printf("xargs: need at least one orgsn\n");
     exit();
   }
 
