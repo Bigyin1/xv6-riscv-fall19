@@ -91,8 +91,6 @@ bd_print() {
   for (int k = 0; k < nsizes; k++) {
     printf("size %d (blksz %d nblk %d): free list: ", k, BLK_SIZE(k), NBLK(k));
     lst_print(&bd_sizes[k].free);
-    printf("  alloc:");
-    bd_print_vector(bd_sizes[k].alloc, NBLK(k));
     if(k > 0) {
       printf("  split:");
       bd_print_vector(bd_sizes[k].split, NBLK(k));
@@ -210,6 +208,13 @@ blk_index_next(int k, char *p) {
   return n ;
 }
 
+// Compute the last block at size k that doesn't contain p
+int
+blk_index_prev(int k, char *p) {
+  int n = (p - (char *) bd_base) / BLK_SIZE(k);
+  return --n ;
+}
+
 int
 log2(uint64 n) {
   int k = 0;
@@ -245,26 +250,11 @@ bd_mark(void *start, void *stop)
 // If a block is marked as allocated and the buddy is free, put the
 // buddy on the free list at size k.
 int
-bd_initfree_pair(int k, int bi, char is_left) {
-  int buddy = (bi % 2 == 0) ? bi+1 : bi-1;
+bd_initfree_pair(int k, int bi) {
   int free = 0;
   if(bit_isset(bd_sizes[k].alloc, bi/2)) {
-    // one of the pair is free
     free = BLK_SIZE(k);
-    if(buddy < bi) {
-        if (is_left) {
-            lst_push(&bd_sizes[k].free, addr(k, bi));
-            return free;
-        }
-        lst_push(&bd_sizes[k].free, addr(k, buddy));
-    }
-    else {
-        if (is_left) {
-            lst_push(&bd_sizes[k].free, addr(k, buddy));
-            return free;
-        }
-        lst_push(&bd_sizes[k].free, addr(k, bi));
-    }
+    lst_push(&bd_sizes[k].free, addr(k, bi));
   }
   return free;
 }
@@ -275,14 +265,13 @@ bd_initfree_pair(int k, int bi, char is_left) {
 int
 bd_initfree(void *bd_left, void *bd_right) {
   int free = 0;
-
   for (int k = 0; k < MAXSIZE; k++) {   // skip max size
     int left = blk_index_next(k, bd_left);
-    int right = blk_index(k, bd_right);
-    free += bd_initfree_pair(k, left, 1);
+    int right = blk_index_prev(k, bd_right);
+    free += bd_initfree_pair(k, left);
     if(right <= left)
       continue;
-    free += bd_initfree_pair(k, right, 0);
+    free += bd_initfree_pair(k, right);
   }
   return free;
 }
@@ -354,7 +343,6 @@ bd_init(void *base, void *end) {
   // done allocating; mark the memory range [base, p) as allocated, so
   // that buddy will not hand out that memory.
   int meta = bd_mark_data_structures(p);
-  
   // mark the unavailable memory range [end, HEAP_SIZE) as allocated,
   // so that buddy will not hand out that memory.
   int unavailable = bd_mark_unavailable(end, p);
