@@ -15,7 +15,27 @@ extern char etext[];  // kernel.ld sets this to end of kernel code.
 
 extern char trampoline[]; // trampoline.S
 
-void print(pagetable_t);
+void print_pte(pagetable_t p, int lvl) {
+
+  for(int i = 0; i < PGSIZE/sizeof(pte_t); i++) {
+    pte_t pte = p[i];
+    if(pte & PTE_V) {
+      for (int i = 0; i < lvl; ++i) {
+        printf(" ..");
+      }
+      printf("%d: pte %p pa %p\n", i, pte, PTE2PA((pte)));
+      if (lvl == 3) {
+        continue;
+      }
+      print_pte((pagetable_t)PTE2PA((pte)), lvl+1);
+    }
+  }
+}
+
+void vmprint(pagetable_t p) {
+  printf("page table %p\n", p);
+  print_pte(p, 1);
+}
 
 /*
  * create a direct-map page table for the kernel and
