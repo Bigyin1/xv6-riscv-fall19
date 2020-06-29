@@ -115,6 +115,18 @@ walk(pagetable_t pagetable, uint64 va, int alloc)
   return &pagetable[PX(0, va)];
 }
 
+int
+isusers(pagetable_t pagetable, uint64 va) {
+  pte_t *pte;
+  if ((pte = walk(pagetable, va, 0)) == 0) {
+    return 0;
+  }
+  if ((*pte & PTE_V) == 1 && (*pte & PTE_U) == 0) {
+    return -1;
+  }
+  return (*pte & PTE_V);
+}
+
 // Look up a virtual address, return the physical address,
 // or 0 if not mapped.
 // Can only be used to look up user pages.
@@ -382,22 +394,23 @@ int
 handle_page_fault(struct proc *p, uint64 va);
 
 uint64 get_pa(pagetable_t pagetable, uint64 va) {
-  //uint64 pa;
-  return walkaddr(pagetable, va);
-
-//  pte_t *pte = walk(pagetable, va, 0);
-//  if(pte == 0)
-//    return 0;
-//  if((((*pte & PTE_U) == 0) || ((*pte & PTE_V) == 0)))
-//    return 0;
-//  pa = PTE2PA(*pte);
-//  if(*pte == 0) {
-//    if (handle_page_fault(myproc(), va) != 0) {
-//      return 0;
-//    }
-//    pa = walkaddr(pagetable, va);
-//  }
-//  return pa;
+  uint64 pa;
+  if(va >= MAXVA) {
+    return 0;
+  }
+  pte_t *pte = walk(pagetable, va, 0);
+  if(pte != 0 && (*pte & PTE_V) == 1 && (*pte & PTE_U) == 0)
+    return 0;
+  if (pte != 0) {
+    pa = PTE2PA(*pte);
+  }
+  if(pte == 0 || (*pte & PTE_V) == 0) {
+    if (handle_page_fault(myproc(), va) != 0) {
+      return 0;
+    }
+    pa = walkaddr(pagetable, va);
+  }
+  return pa;
 }
 
 // Copy from kernel to user.
