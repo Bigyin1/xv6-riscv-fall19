@@ -37,7 +37,7 @@ handle_page_fault(struct proc *p, uint64 va)
   if (va >= p->sz) {
     return -1;
   }
-  if (isusers(p->pagetable, va) < 0) {
+  if (isusers(p->pagetable, va) != 0) {
     return -1;
   }
   mem = kalloc();

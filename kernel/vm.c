@@ -115,6 +115,8 @@ walk(pagetable_t pagetable, uint64 va, int alloc)
   return &pagetable[PX(0, va)];
 }
 
+// returns 0 if page not exists or invalid,
+// 1 if valid, and -1 if page not accessible by user.
 int
 isusers(pagetable_t pagetable, uint64 va) {
   pte_t *pte;
@@ -393,22 +395,16 @@ uvmclear(pagetable_t pagetable, uint64 va)
 int
 handle_page_fault(struct proc *p, uint64 va);
 
-uint64 get_pa(pagetable_t pagetable, uint64 va) {
+uint64 get_valid_pa(pagetable_t pagetable, uint64 va) {
+
   uint64 pa;
-  if(va >= MAXVA) {
-    return 0;
-  }
-  pte_t *pte = walk(pagetable, va, 0);
-  if(pte != 0 && (*pte & PTE_V) == 1 && (*pte & PTE_U) == 0)
-    return 0;
-  if (pte != 0) {
-    pa = PTE2PA(*pte);
-  }
-  if(pte == 0 || (*pte & PTE_V) == 0) {
+  pa = walkaddr(pagetable, va);
+  if (pa ==0) {
     if (handle_page_fault(myproc(), va) != 0) {
       return 0;
     }
     pa = walkaddr(pagetable, va);
+    return pa;
   }
   return pa;
 }
@@ -423,7 +419,7 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
 
   while(len > 0){
     va0 = PGROUNDDOWN(dstva);
-    pa0 = get_pa(pagetable, va0);
+    pa0 = get_valid_pa(pagetable, va0);
     if(pa0 == 0)
       return -1;
     n = PGSIZE - (dstva - va0);
@@ -448,7 +444,7 @@ copyin(pagetable_t pagetable, char *dst, uint64 srcva, uint64 len)
 
   while(len > 0){
     va0 = PGROUNDDOWN(srcva);
-    pa0 = get_pa(pagetable, va0);
+    pa0 = get_valid_pa(pagetable, va0);
     if(pa0 == 0)
       return -1;
     n = PGSIZE - (srcva - va0);
@@ -475,7 +471,7 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
 
   while(got_null == 0 && max > 0){
     va0 = PGROUNDDOWN(srcva);
-    pa0 = get_pa(pagetable, va0);
+    pa0 = get_valid_pa(pagetable, va0);
     if(pa0 == 0)
       return -1;
     n = PGSIZE - (srcva - va0);
