@@ -34,14 +34,14 @@ handle_page_fault(struct proc *p, uint64 va)
 {
   char *mem;
 
-  mem = kalloc();
-  if(mem == 0){
+  if (va >= p->sz) {
     return -1;
   }
   if (isusers(p->pagetable, va) < 0) {
     return -1;
   }
-  if (va >= p->sz) {
+  mem = kalloc();
+  if(mem == 0){
     return -1;
   }
   va = PGROUNDDOWN(va);

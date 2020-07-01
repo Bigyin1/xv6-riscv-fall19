@@ -2128,8 +2128,7 @@ main(int argc, char *argv[])
     {pgbug, "pgbug" },
     {sbrkbugs, "sbrkbugs" },
     {badwrite, "badwrite" },
-    // test is passing, but further tests failing due to kalloc fault
-    //{badarg, "badarg" },
+    {badarg, "badarg" },
     {reparent, "reparent" },
     {twochildren, "twochildren"},
     {forkfork, "forkfork"},
