@@ -34,7 +34,7 @@ main()
     virtio_disk_init(minor(ROOTDEV)); // emulated hard disk
     userinit();      // first user process
     __sync_synchronize();
-    debug = 1;
+    //debug = 1;
     started = 1;
   } else {
     while(started == 0)

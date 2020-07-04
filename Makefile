@@ -266,5 +266,9 @@ myapi.key:
 		false; \
 	fi;
 
+usertests:
+	@rm fs.img
+	@make fs.img
+	@make qemu
 
 .PHONY: handin tarball tarball-pref clean grade handin-check

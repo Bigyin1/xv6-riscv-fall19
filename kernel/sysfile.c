@@ -441,10 +441,10 @@ sys_exec(void)
 
   int ret = exec(path, argv);
 
-  printf("exec freeing args\n");
+  //printf("exec freeing args\n");
   for(i = 0; i < NELEM(argv) && argv[i] != 0; i++)
     kfree(argv[i]);
-  printf("exec end freeing args\n");
+  //printf("exec end freeing args\n");
   return ret;
 
  bad:

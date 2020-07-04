@@ -254,14 +254,14 @@ fork(void)
   if((np = allocproc()) == 0){
     return -1;
   }
-  printf("fork; start copy\n");
+  //printf("fork; start copy\n");
   // Copy user memory from parent to child.
   if(uvmcopy(p->pagetable, np->pagetable, p->sz) < 0){
     freeproc(np);
     release(&np->lock);
     return -1;
   }
-  printf("fork; end copy\n");
+  //printf("fork; end copy\n");
   np->sz = p->sz;
 
   np->parent = p;

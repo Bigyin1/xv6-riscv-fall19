@@ -311,11 +311,11 @@ freewalk(pagetable_t pagetable)
 void
 uvmfree(pagetable_t pagetable, uint64 sz)
 {
-  printf("start uvmunmap\n");
+  //printf("start uvmunmap\n");
   uvmunmap(pagetable, 0, sz, 1, 1);
-  printf("start freewalk\n");
+  //printf("start freewalk\n");
   freewalk(pagetable);
-  printf("end freewalk\n");
+  //printf("end freewalk\n");
 }
 
 // Given a parent process's page table, copy
@@ -361,7 +361,7 @@ uvmclear(pagetable_t pagetable, uint64 va)
   *pte &= ~PTE_U;
 }
 
-int handle_cow(struct proc *p, uint64 va);
+int handle_cow(struct proc *p, uint64 va, int);
 // Copy from kernel to user.
 // Copy len bytes from src to virtual address dstva in a given page table.
 // Return 0 on success, -1 on error.
@@ -372,7 +372,7 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
 
   while(len > 0){
     va0 = PGROUNDDOWN(dstva);
-    if (handle_cow(myproc(), va0) != 0)
+    if (handle_cow(myproc(), va0, 1) != 0)
       return -1;
     pa0 = walkaddr(pagetable, va0);
     if(pa0 == 0)

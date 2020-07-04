@@ -31,9 +31,15 @@ trapinithart(void)
 
 
 int
-handle_cow(struct proc *p, uint64 va) {
-  pte_t *pte = (pte_t*)walk(p->pagetable, va, 0);
-  if (pte && (*pte & PTE_COW) != 0) {
+handle_cow(struct proc *p, uint64 va, int is_copy) {
+  pte_t *pte;
+  if (va >= MAXVA)
+    return -1;
+
+  pte = (pte_t*)walk(p->pagetable, va, 0);
+  if (!pte)
+    return -1;
+  if ((*pte & PTE_COW) != 0) {
     if (kgetref(PTE2PA(*pte)) == 1) {
       *pte |= PTE_W;
       *pte &= ~PTE_COW;
@@ -41,18 +47,20 @@ handle_cow(struct proc *p, uint64 va) {
     }
     uint64 np = (uint64)kalloc();
     if (np == 0){
-      p->killed = 1;
       return -1;
     }
     memmove((void*)np, (void*)PTE2PA(*pte), PGSIZE);
-    printf("cowtrap:start decr incr\n");
+    //printf("cowtrap:start decr incr\n");
     krefdecr(PTE2PA(*pte));
     krefincr(np);
-    printf("cowtrap:end decr incr\n");
+    //printf("cowtrap:end decr incr\n");
     *pte = PA2PTE(np) | PTE_FLAGS(*pte) | PTE_W;
     *pte &= ~PTE_COW;
+    return 0;
   }
-  return 0;
+  if (is_copy)
+    return 0;
+  return -1;
 }
 
 //
@@ -92,7 +100,7 @@ usertrap(void)
 
     syscall();
   } else if (r_scause() == 13 || r_scause() == 15) {
-    if (handle_cow(p, r_stval()) != 0) {
+    if (handle_cow(p, r_stval(), 0) != 0) {
       p->killed = 1;
     }
 
