@@ -163,11 +163,11 @@ proc_pagetable(struct proc *p)
   // only the supervisor uses it, on the way
   // to/from user space, so not PTE_U.
   mappages(pagetable, TRAMPOLINE, PGSIZE,
-           (uint64)trampoline, PTE_R | PTE_X);
+           (uint64)trampoline, PTE_R | PTE_X, 0);
 
   // map the trapframe just below TRAMPOLINE, for trampoline.S.
   mappages(pagetable, TRAPFRAME, PGSIZE,
-           (uint64)(p->tf), PTE_R | PTE_W);
+           (uint64)(p->tf), PTE_R | PTE_W, 0);
 
   return pagetable;
 }
@@ -177,8 +177,8 @@ proc_pagetable(struct proc *p)
 void
 proc_freepagetable(pagetable_t pagetable, uint64 sz)
 {
-  uvmunmap(pagetable, TRAMPOLINE, PGSIZE, 0);
-  uvmunmap(pagetable, TRAPFRAME, PGSIZE, 0);
+  uvmunmap(pagetable, TRAMPOLINE, PGSIZE, 0, 0);
+  uvmunmap(pagetable, TRAPFRAME, PGSIZE, 0, 0);
   if(sz > 0)
     uvmfree(pagetable, sz);
 }
@@ -254,13 +254,14 @@ fork(void)
   if((np = allocproc()) == 0){
     return -1;
   }
-
+  printf("fork; start copy\n");
   // Copy user memory from parent to child.
   if(uvmcopy(p->pagetable, np->pagetable, p->sz) < 0){
     freeproc(np);
     release(&np->lock);
     return -1;
   }
+  printf("fork; end copy\n");
   np->sz = p->sz;
 
   np->parent = p;

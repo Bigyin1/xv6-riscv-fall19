@@ -29,6 +29,32 @@ trapinithart(void)
   w_stvec((uint64)kernelvec);
 }
 
+
+int
+handle_cow(struct proc *p, uint64 va) {
+  pte_t *pte = (pte_t*)walk(p->pagetable, va, 0);
+  if (pte && (*pte & PTE_COW) != 0) {
+    if (kgetref(PTE2PA(*pte)) == 1) {
+      *pte |= PTE_W;
+      *pte &= ~PTE_COW;
+      return 0;
+    }
+    uint64 np = (uint64)kalloc();
+    if (np == 0){
+      p->killed = 1;
+      return -1;
+    }
+    memmove((void*)np, (void*)PTE2PA(*pte), PGSIZE);
+    printf("cowtrap:start decr incr\n");
+    krefdecr(PTE2PA(*pte));
+    krefincr(np);
+    printf("cowtrap:end decr incr\n");
+    *pte = PA2PTE(np) | PTE_FLAGS(*pte) | PTE_W;
+    *pte &= ~PTE_COW;
+  }
+  return 0;
+}
+
 //
 // handle an interrupt, exception, or system call from user space.
 // called from trampoline.S
@@ -65,6 +91,11 @@ usertrap(void)
     intr_on();
 
     syscall();
+  } else if (r_scause() == 13 || r_scause() == 15) {
+    if (handle_cow(p, r_stval()) != 0) {
+      p->killed = 1;
+    }
+
   } else if((which_dev = devintr()) != 0){
     // ok
   } else {
